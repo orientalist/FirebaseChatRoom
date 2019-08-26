@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script defer src="https://www.gstatic.com/firebasejs/6.4.1/firebase-app.js"></script>
+<!--Import firestore SDKs-->
+<script defer src="https://www.gstatic.com/firebasejs/6.4.1/firebase-firestore.js"></script>
+<script defer src="../demo/js/config.js"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script defer src="../demo/js/package/fsChat.js"></script>
+<script defer>
+    $(document).ready(() => {
+        try {
+            firebase.initializeApp(firebaseConfig);
+            var db = firebase.firestore();
+            var collection = db.collection(`brand0001-friend0001`);
+            CollectionExisted(collection,
+                result => {
+                    //console.log(result);
+                },
+                err => {
+                    console.log(err);
+                }
+            );
+
+            var lastTime = null;
+            GetRecords(collection,
+                result => {
+                    result.forEach(ele => {
+                        if (ele.data().role == 'user') {
+                            lastTime = ele.data().time;
+                        }
+                    });
+
+                    ListenToChangesByField(collection, 'role', 'user',
+                        result => {
+                            console.log(result.doc.data());
+                        }, 'time', lastTime);
+
+                    InsertData(collection, {
+                        role: 'user',
+                        value: 'test',
+                        time: new Date(),
+                        isReaded: false
+                    },
+                        result => {
+                            //
+                        },
+                        err => {
+                            console.log(err);
+                        });
+                },
+                err => {
+                    console.log(err);
+                }, 'time');
+
+        } catch (e) {
+            console.log(`Error: ${e}`);
+        }
+    });
+</script>
+
+</html>

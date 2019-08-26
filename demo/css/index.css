@@ -1,0 +1,46 @@
+table:not(#tbRecord) {
+    margin: auto;
+    border: 1px solid black;
+}
+
+table:not(#tbRecord) td {
+    border: 1px solid black;
+}
+
+.tbHead {
+    background-color: black;
+    color: white;
+}
+
+#divContent {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.userSpeak {
+    text-align: left;
+}
+
+.officeSpeak {
+    text-align: right;
+}
+
+#tbRecord {
+    border: 1px solid black;
+}
+
+.sysSpeak {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+}
+.tbLeft{
+    width:300px;
+}
+.user{
+    display: none;
+}
+.office{
+    display:none;
+}
