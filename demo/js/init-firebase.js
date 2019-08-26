@@ -1,47 +1,58 @@
-const BrandId = $('#BrandId').val();
-const FriendId = $('#FriendId').val();
+var BrandId = '',FriendId = '';
+var userRecirdDone=false,officeRecirdDone=false;
+var query_user=null,query_office=null;
+var collection=null;
 $(document).ready(() => {
     try {
+        BrandId = $('#BrandId').val();
+        FriendId = $('#FriendId').val();
+
         firebase.initializeApp(firebaseConfig);
         var db = firebase.firestore();
-        var collection = db.collection(`${BrandId}-${FriendId}`);
+        collection = db.collection(`${BrandId}-${FriendId}`);
 
         AppendRecord('sys', '連線已經建立');
         AppendRecord('sys', '開始檢查聊天記錄');
-        CheckIsIntied(collection,
+
+        CollectionExisted(collection,
             result => {
                 if (result) {
                     AppendRecord('sys', '聊天記錄已存在');
                     AppendRecord('sys', '開始載入聊天記錄');
-                    var userChat=[];
-                    var officeChat=[];
-                    LoadRecords(collection,
-                        data => {
-                            data.forEach(ele => {
-                                var row = ele.data();
-                                switch (row.role) {
-                                    case 'user':
-                                        userChat.push(row.time);
-                                        break;
-                                    case 'office':
-                                        officeChat.push(row.time);
-                                        break;
-                                }
-                                AppendRecord(row.role, row.value);
+
+                    var records=[];
+
+                    query_user=collection
+                        .where('role','==','user')                        
+                        .onSnapshot(querySnapshot=>{
+                            querySnapshot.docChanges().forEach(ele=>{
+                                records.push({
+                                    role:ele.doc.data().role,
+                                    value:ele.doc.data().value,
+                                    time:ele.doc.data().time
+                                });                                
                             });
-                            var lastUserChatTime = userChat[userChat.length - 1];
-                            var lastOfficeChatTime = officeChat[officeChat.length - 1];
-                            AppendRecord('sys', '解鎖UI');
-                            FuncionizeUI(collection, lastUserChatTime, lastOfficeChatTime);
-                        },
-                        err => {
-                            console.log(err);
-                        }
-                    )
+                            userRecirdDone=true;
+                            RenderRecord(records);
+                        });
+                        
+                    query_office=collection
+                        .where('role','==','office')                        
+                        .onSnapshot(querySnapshot=>{                            
+                            querySnapshot.docChanges().forEach(ele=>{
+                                records.push({
+                                    role:ele.doc.data().role,
+                                    value:ele.doc.data().value,
+                                    time:ele.doc.data().time
+                                });                                
+                            });
+                            officeRecirdDone=true;
+                            RenderRecord(records);
+                        });                    
                 } else {
                     AppendRecord('sys', '聊天記錄不存在');
                     AppendRecord('sys', '解鎖UI');
-                    FuncionizeUI(collection);
+                    UnlockUI(collection);
                 }
             },
             err => {
@@ -54,111 +65,63 @@ $(document).ready(() => {
     }
 });
 
-var SendMsg = (collection, role, msg) => {
-    collection.add({
-        role: role,
-        value: msg,
-        time: new Date(),
-        isReaded: false
-    })
-        .then((result) => {
-            AppendRecord(role, msg);
-        })
-        .catch((err) => {
-            AppendRecord('sys', `發送訊息發生錯誤: ${err}`);
+var RenderRecord=(records)=>{
+    if(userRecirdDone&&officeRecirdDone){
+        records=records.sort(function(a,b){
+            return a.time>b.time?1:-1;
         });
+        records.forEach(ele=>{
+            AppendRecord(ele.role,ele.value);
+        });
+        AppendRecord('sys', `聊天紀錄載入完成`);
+        UnlockUI(collection);
+    }
 }
 
-var CheckIsIntied = (collection, callback, fail) => {
-    collection.get({ source: 'server' })
-        .then(
-            result => {
-                callback(!result.empty);
-            },
-            err => {
-                fail(err)
-            }
-        )
-}
-
-var LoadRecords = (collection, callback, fail) => {
-    collection.orderBy('time').get({ source: 'server' })
-    .then(
-        result => {
-            callback(result);
-        },
-        err => {
-            fail(err)
-        }
-    )
-}
-
-var FuncionizeUI = (collection, lastUserChatTime = null, lastOfficeChatTime = null) => {
+var UnlockUI = (collection) => {
     AppendRecord('sys', '請選擇角色');
     $('#slcRole').prop('disabled', false);
-    $('#enterRole').prop('disabled', false);
+    $('#enterRole').prop('disabled', false);    
 
-    $('#enterRole').click(function () { EnterRole(collection, lastUserChatTime, lastOfficeChatTime) });
+    $('#enterRole').click(function () {
+        var role = $('#slcRole').val();
+        var listenTo =(role=='user'?'office':'user');
+        EnterRole(collection, role, listenTo);
+    });
 }
 
-var EnterRole = (collection, lastUserChatTime = null, lastOfficeChatTime = null) => {
+var EnterRole = (collection, role, listenTo) => {
     try {
         $('#slcRole').prop('disabled', true);
         $('#enterRole').prop('disabled', true);
-        var listenTo = '';
-        var lasttimeOfListenTo = null;
-        switch ($('#slcRole').val()) {
-            case 'user':
-                listenTo = 'office';
-                lasttimeOfListenTo = lastOfficeChatTime;
-                $('#btnUserSend').prop('disabled', false);
-                $('#btnUserSend').click(function () {
-                    SendMsg(collection, 'user', $('#userInput').val());
-                });
-                $('.user').show();
-                break;
-            case 'office':
-                listenTo = 'user';
-                lasttimeOfListenTo = lastUserChatTime;
-                $('#btnOfficeSend').prop('disabled', false);
-                $('#btnOfficeSend').click(function () {
-                    SendMsg(collection, 'office', $('#officeInput').val());
-                });
-                $('.office').show();
-                break;
-        }
 
-        AppendRecord('sys', `已選擇${$('#slcRole').val()} 始監聽 ${listenTo}`);
-
-        var query=null;
-
-        if (lasttimeOfListenTo !== null) {
-            query=collection.where('role', '==', listenTo).where('time', '>', lasttimeOfListenTo);
-        } else {
-            query=collection.where('role', '==', listenTo);
-        }
-
-        query.onSnapshot(querySnapshot => {
-            querySnapshot.docChanges().forEach(ele => {
-                AppendRecord('sys', `收到訊息,類型: ${ele.type}`);
-                //console.log(ele);
-                switch (ele.type) {
-                    case 'added':
-                        AppendRecord(ele.doc.data().role, ele.doc.data().value);
-                        break;
-                    case 'modified':
-                        //console.log(ele.doc.data());
-                        break;
-                    case 'removed':
-                        //console.log(ele.doc.data());
-                        break;
+        $(`#btn${role}Send`).prop('disabled', false);
+        $(`#btn${role}Send`).click(function () {
+            InsertData(collection,
+                {
+                    role: role,
+                    value: $(`#${role}Input`).val(),
+                    time: new Date(),
+                    isReaded: false
+                },
+                result => {
+                    AppendRecord(role, $(`#${role}Input`).val());
+                },
+                err => {
+                    AppendRecord('sys', `發送訊息發生錯誤: ${err}`);
                 }
-            });
+            );
         });
+        $(`.${role}`).show();        
+
+        AppendRecord('sys', `已選擇${role} 始監聽 ${listenTo}`);
+
+        role=='user'?query_office():query_user();        
     } catch (e) {
         AppendRecord('sys', `發生例外: ${e}`);
     }
 };
+
 
 var AppendRecord = (role, value) => {
     var table = '#tbdMsgs';
