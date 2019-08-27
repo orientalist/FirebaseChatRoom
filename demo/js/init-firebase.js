@@ -1,7 +1,9 @@
-var BrandId = '',FriendId = '';
-var userRecirdDone=false,officeRecirdDone=false;
-var query_user=null,query_office=null;
-var collection=null;
+var BrandId = '', FriendId = '';
+var getUserRecord = false, getOfficeRecord = false;
+var query_user = null, query_office = null;
+var collection = null;
+var isInitialized = false;
+var records = [];
 $(document).ready(() => {
     try {
         BrandId = $('#BrandId').val();
@@ -19,41 +21,36 @@ $(document).ready(() => {
                 if (result) {
                     AppendRecord('sys', '聊天記錄已存在');
                     AppendRecord('sys', '開始載入聊天記錄');
-
-                    var records=[];
-
-                    query_user=collection
-                        .where('role','==','user')                        
-                        .onSnapshot(querySnapshot=>{
-                            querySnapshot.docChanges().forEach(ele=>{
-                                records.push({
-                                    role:ele.doc.data().role,
-                                    value:ele.doc.data().value,
-                                    time:ele.doc.data().time
-                                });                                
-                            });
-                            userRecirdDone=true;
-                            RenderRecord(records);
-                        });
-                        
-                    query_office=collection
-                        .where('role','==','office')                        
-                        .onSnapshot(querySnapshot=>{                            
-                            querySnapshot.docChanges().forEach(ele=>{
-                                records.push({
-                                    role:ele.doc.data().role,
-                                    value:ele.doc.data().value,
-                                    time:ele.doc.data().time
-                                });                                
-                            });
-                            officeRecirdDone=true;
-                            RenderRecord(records);
-                        });                    
                 } else {
                     AppendRecord('sys', '聊天記錄不存在');
-                    AppendRecord('sys', '解鎖UI');
-                    UnlockUI(collection);
                 }
+                query_user = collection
+                    .where('role', '==', 'user')
+                    .onSnapshot(querySnapshot => {
+                        querySnapshot.docChanges().forEach(ele => {
+                            records.push({
+                                role: ele.doc.data().role,
+                                value: ele.doc.data().value,
+                                time: ele.doc.data().time
+                            });
+                        });
+                        getUserRecord = true;
+                        RenderRecord();
+                    });
+
+                query_office = collection
+                    .where('role', '==', 'office')
+                    .onSnapshot(querySnapshot => {
+                        querySnapshot.docChanges().forEach(ele => {
+                            records.push({
+                                role: ele.doc.data().role,
+                                value: ele.doc.data().value,
+                                time: ele.doc.data().time
+                            });
+                        });
+                        getOfficeRecord = true;
+                        RenderRecord();
+                    });
             },
             err => {
                 AppendRecord('sys', `檢查聊天記錄發生例外: ${err}`);
@@ -65,32 +62,36 @@ $(document).ready(() => {
     }
 });
 
-var RenderRecord=(records)=>{
-    if(userRecirdDone&&officeRecirdDone){
-        records=records.sort(function(a,b){
-            return a.time>b.time?1:-1;
+var RenderRecord = () => {
+    if (getUserRecord && getOfficeRecord) {
+        records = records.sort(function (a, b) {
+            return a.time > b.time ? 1 : -1;
         });
-        records.forEach(ele=>{
-            AppendRecord(ele.role,ele.value);
+        records.forEach(ele => {
+            AppendRecord(ele.role, ele.value);
         });
         AppendRecord('sys', `聊天紀錄載入完成`);
-        UnlockUI(collection);
+        records = [];
+        if (!isInitialized) {
+            isInitialized = true;
+            UnlockUI();
+        }
     }
 }
 
-var UnlockUI = (collection) => {
+var UnlockUI = () => {
     AppendRecord('sys', '請選擇角色');
     $('#slcRole').prop('disabled', false);
-    $('#enterRole').prop('disabled', false);    
+    $('#enterRole').prop('disabled', false);
 
     $('#enterRole').click(function () {
         var role = $('#slcRole').val();
-        var listenTo =(role=='user'?'office':'user');
-        EnterRole(collection, role, listenTo);
+        var listenTo = (role == 'user' ? 'office' : 'user');
+        EnterRole(role, listenTo);
     });
 }
 
-var EnterRole = (collection, role, listenTo) => {
+var EnterRole = (role, listenTo) => {
     try {
         $('#slcRole').prop('disabled', true);
         $('#enterRole').prop('disabled', true);
@@ -112,11 +113,10 @@ var EnterRole = (collection, role, listenTo) => {
                 }
             );
         });
-        $(`.${role}`).show();        
+        $(`.${role}`).show();
 
         AppendRecord('sys', `已選擇${role} 始監聽 ${listenTo}`);
-
-        role=='user'?query_office():query_user();        
+        role == 'user' ? query_user() : query_office();
     } catch (e) {
         AppendRecord('sys', `發生例外: ${e}`);
     }

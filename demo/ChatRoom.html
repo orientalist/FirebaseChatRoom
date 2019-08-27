@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Firestore Chatroom</title>
+</head>
+<link rel='stylesheet' href='../demo/css/index.css'></link>
+
+<body>
+    <h1 style="text-align:center;">Firestore聊天室</h1>
+    <div id='divContent'>
+        <div>
+            <table class="tbLeft">
+                <thead>
+                    <tr class="tbHead">
+                        <td>BrandId</td>
+                        <td>FreindId</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" name="BrandId" id="BrandId" value="brand0001" disabled='disabled'></td>
+                        <td><input type="text" name="FriendId" id="FriendId" value="friend0001" disabled='disabled'>
+                        </td>
+                    </tr>
+                    <tr class="tbHead">
+                        <td colspan="2">選擇角色</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select id='slcRole' disabled='disabled'>
+                                <option value="user">用戶</option>
+                                <option value="office">官方</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button id='enterRole' disabled='disabled'>確定</button>
+                        </td>
+                    </tr>
+                    <tr class="tbHead user">
+                        <td colspan="2">用戶輸入</td>
+                    </tr>
+                    <tr class="user">
+                        <td><input type="text" name="userInput" id='userInput'></td>
+                        <td><button disabled='disabled' id='btnuserSend'>發送</button></td>
+                    </tr>
+                    <tr class="tbHead office">
+                        <td colspan="2">官方輸入</td>
+                    </tr>
+                    <tr class="office">
+                        <td><input type="text" name="officeInput" id='officeInput'></td>
+                        <td><button disabled='disabled' id='btnofficeSend'>發送</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table id='tbSysMsgs' class="tbLeft" >
+                <thead>
+                    <tr class="tbHead">
+                        <td>
+                            系統狀態
+                        </td>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div>
+            <table id='tbRecord' style="width:400px;">
+                <thead>
+                    <tr class="tbHead">
+                        <td>聊天內容</td>
+                    </tr>
+                </thead>
+                <tbody id='tbdMsgs'>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script defer src="https://www.gstatic.com/firebasejs/6.4.1/firebase-app.js"></script>
+<!--Import firestore SDKs-->
+<script defer src="https://www.gstatic.com/firebasejs/6.4.1/firebase-firestore.js"></script>
+<script defer src="../demo/js/config.js"></script>
+<script defer src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script defer src="../demo/js/package/fsChat.js"></script>
+<script defer src="../demo/js/init-firebase-re.js"></script>
+</html>

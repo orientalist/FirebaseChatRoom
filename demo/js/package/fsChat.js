@@ -66,3 +66,22 @@ var ListenToChangesByField = (collection, field, valudOfField, callback, fieldNa
         console.log(`ListenToChangesByField Error: ${e}`);
     }
 }
+
+var ListenToAllChange=(collection,fieldOfTime,callback,fail)=>{
+    try{
+        var query=collection;
+        if(fieldOfTime){
+            query=query.orderBy(fieldOfTime);
+        }
+        query.onSnapshot(querySnapshot=>{
+            querySnapshot.docChanges().forEach(ele=>{
+                callback(ele);
+            });
+        },
+        err=>{
+            fail(err);
+        });
+    }catch(e){
+        console.log(`ListenToAllChange Error: ${e}`);
+    }
+}
